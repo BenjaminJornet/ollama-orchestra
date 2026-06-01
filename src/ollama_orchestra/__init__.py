@@ -1,3 +1,4 @@
+from .chat import OrchestratedChat
 from .chunking import TextChunk, TextChunker, chunk_text
 from .embeddings import EmbeddingService
 from .health import check_server_health, prewarm_all_servers, prewarm_model
@@ -7,6 +8,7 @@ from .reasoning import chat, strip_reasoning
 __all__ = [
     "EmbeddingService",
     "OllamaSemaphorePool",
+    "OrchestratedChat",
     "RoundRobinOllama",
     "TextChunk",
     "TextChunker",
