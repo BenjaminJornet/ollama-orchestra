@@ -95,11 +95,22 @@ status = await prewarm_all_servers(["http://localhost:11434"], model="your-model
 
 ## Roadmap
 
-- Metrics callback hooks for queue and embedding workflows.
 - Adaptive concurrency based on latency and endpoint health.
 - Endpoint scoring for embedding workloads.
 - Streaming chat helper.
 - Additional gateway-compatible health checks.
+
+## Metrics hooks
+
+Both semaphore and embedding workflows accept optional callbacks for lightweight instrumentation:
+
+```python
+events = []
+pool = OllamaSemaphorePool(metrics_cb=events.append)
+service = EmbeddingService("your-embedding-model", ["http://localhost:11434"], metrics_cb=events.append)
+```
+
+Events are dictionaries with an `event` key, such as `semaphore_acquired`, `embedding_failure`, or `embedding_endpoint_quarantined`.
 
 ## Development
 

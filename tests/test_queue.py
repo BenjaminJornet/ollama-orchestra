@@ -27,6 +27,21 @@ async def test_local_ollama_url_allows_one_concurrent_slot():
 
 
 @pytest.mark.asyncio
+async def test_semaphore_pool_emits_metrics():
+    events: list[dict] = []
+    pool = OllamaSemaphorePool(metrics_cb=events.append)
+
+    async with pool.semaphore("http://localhost:11434"):
+        pass
+
+    assert [event["event"] for event in events] == [
+        "semaphore_created",
+        "semaphore_acquired",
+        "semaphore_released",
+    ]
+
+
+@pytest.mark.asyncio
 async def test_cloud_url_uses_higher_concurrency_limit():
     pool = OllamaSemaphorePool(cloud_limit=8)
     sem = await pool.get_semaphore("https://api.example.test/v1")

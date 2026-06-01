@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import itertools
 import logging
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager
 from urllib.parse import urlparse
 
@@ -27,10 +27,12 @@ class OllamaSemaphorePool:
         *,
         local_limit: int = 1,
         cloud_limit: int = 8,
+        metrics_cb: Callable[[dict], None] | None = None,
     ) -> None:
         self.local_hosts = set(local_hosts or set())
         self.local_limit = local_limit
         self.cloud_limit = cloud_limit
+        self.metrics_cb = metrics_cb
         self._semaphores: dict[str, asyncio.Semaphore] = {}
         self._lock = asyncio.Lock()
 
@@ -52,16 +54,30 @@ class OllamaSemaphorePool:
                     )
                     self._semaphores[key] = asyncio.Semaphore(limit)
                     logger.info("ollama_semaphore_created url=%s concurrency=%d", key, limit)
+                    self._emit_metric(
+                        {"event": "semaphore_created", "url": key, "concurrency": limit}
+                    )
         return self._semaphores[key]
 
     @asynccontextmanager
     async def semaphore(self, base_url: str) -> AsyncIterator[None]:
         sem = await self.get_semaphore(base_url)
+        key = _normalize_url(base_url)
         await sem.acquire()
+        self._emit_metric({"event": "semaphore_acquired", "url": key})
         try:
             yield
         finally:
             sem.release()
+            self._emit_metric({"event": "semaphore_released", "url": key})
+
+    def _emit_metric(self, event: dict) -> None:
+        if not self.metrics_cb:
+            return
+        try:
+            self.metrics_cb(event)
+        except Exception:
+            logger.exception("ollama_metrics_callback_failed")
 
 
 class RoundRobinOllama:
