@@ -45,6 +45,36 @@ async def test_embedding_falls_back_to_second_endpoint_and_alerts():
         await service.close()
 
 
+def test_first_endpoint_down_alert_is_not_suppressed_on_low_uptime():
+    alerts: list[str] = []
+    service = EmbeddingService(
+        "embed-model",
+        ["http://one.test"],
+        alert_cb=alerts.append,
+        quarantine_seconds=60,
+    )
+
+    service._alert_endpoint_down("http://one.test", "HTTP 500")
+
+    assert len(alerts) == 1
+    assert service._endpoint_down_until["http://one.test"] > 0
+
+
+def test_repeated_endpoint_down_alert_is_suppressed_during_cooldown():
+    alerts: list[str] = []
+    service = EmbeddingService(
+        "embed-model",
+        ["http://one.test"],
+        alert_cb=alerts.append,
+        quarantine_seconds=60,
+    )
+
+    service._alert_endpoint_down("http://one.test", "first")
+    service._alert_endpoint_down("http://one.test", "second")
+
+    assert len(alerts) == 1
+
+
 @pytest.mark.asyncio
 @respx.mock
 async def test_long_text_uses_mean_pooling():

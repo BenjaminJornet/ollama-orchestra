@@ -1,6 +1,8 @@
 # ollama-orchestra
 
 [![CI](https://github.com/BenjaminJornet/ollama-orchestra/actions/workflows/ci.yml/badge.svg)](https://github.com/BenjaminJornet/ollama-orchestra/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/ollama-orchestra.svg)](https://pypi.org/project/ollama-orchestra/)
+[![Downloads](https://static.pepy.tech/badge/ollama-orchestra/month)](https://pepy.tech/project/ollama-orchestra)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue.svg)](pyproject.toml)
 

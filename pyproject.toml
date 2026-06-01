@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "ollama-orchestra"
-version = "0.1.0"
+version = "0.1.2"
 description = "Production helpers for running Ollama under concurrent load across local and remote endpoints."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -28,6 +28,9 @@ dependencies = [
 [project.urls]
 Homepage = "https://github.com/benjaminjornet/ollama-orchestra"
 Issues = "https://github.com/benjaminjornet/ollama-orchestra/issues"
+Documentation = "https://github.com/BenjaminJornet/ollama-orchestra#readme"
+Changelog = "https://github.com/BenjaminJornet/ollama-orchestra/blob/main/CHANGELOG.md"
+PyPI = "https://pypi.org/project/ollama-orchestra/"
 
 [dependency-groups]
 dev = [
@@ -39,6 +42,7 @@ dev = [
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/ollama_orchestra"]
+artifacts = ["src/ollama_orchestra/py.typed"]
 
 [tool.ruff]
 line-length = 100

@@ -2,9 +2,13 @@
 
 ## Unreleased
 
+## 0.1.2
+
 - Added maintainer documentation, security policy, release process, examples, and issue/PR templates.
 - Added production-pattern and reasoning-model documentation.
 - Added build and manual publish workflows.
+- Fixed first endpoint alert cooldown behavior on low-uptime CI runners.
+- Added PyPI metadata, badges, and typed package marker.
 
 ## 0.1.0
 
