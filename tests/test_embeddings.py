@@ -26,6 +26,7 @@ async def test_embed_text_returns_embedding_from_first_endpoint():
 @respx.mock
 async def test_embedding_falls_back_to_second_endpoint_and_alerts():
     alerts: list[str] = []
+    metrics: list[dict] = []
     respx.post("http://one.test/api/embeddings").mock(return_value=Response(500))
     respx.post("http://two.test/api/embeddings").mock(
         return_value=Response(200, json={"embedding": [2.0, 4.0]})
@@ -34,6 +35,7 @@ async def test_embedding_falls_back_to_second_endpoint_and_alerts():
         "embed-model",
         ["http://one.test", "http://two.test"],
         alert_cb=alerts.append,
+        metrics_cb=metrics.append,
         quarantine_seconds=60,
     )
 
@@ -41,6 +43,11 @@ async def test_embedding_falls_back_to_second_endpoint_and_alerts():
         assert await service.embed_text("hello") == [2.0, 4.0]
         assert alerts
         assert service._endpoint_down_until["http://one.test"] > 0
+        assert [event["event"] for event in metrics] == [
+            "embedding_failure",
+            "embedding_endpoint_quarantined",
+            "embedding_success",
+        ]
     finally:
         await service.close()
 

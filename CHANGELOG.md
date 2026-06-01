@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Added metrics callbacks for semaphore and embedding workflows.
+
 ## 0.1.2
 
 - Added maintainer documentation, security policy, release process, examples, and issue/PR templates.

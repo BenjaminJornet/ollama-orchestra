@@ -26,6 +26,7 @@ class EmbeddingService:
         timeout: float = 300.0,
         connect_timeout: float = 10.0,
         alert_cb: Callable[[str], None] | None = None,
+        metrics_cb: Callable[[dict], None] | None = None,
         quarantine_seconds: float = 300.0,
         chunker: TextChunker | None = None,
     ) -> None:
@@ -36,6 +37,7 @@ class EmbeddingService:
         self.model = model
         self.urls = [self._normalize_base_url(url) for url in urls]
         self.alert_cb = alert_cb
+        self.metrics_cb = metrics_cb
         self.quarantine_seconds = quarantine_seconds
         self.chunker = chunker or TextChunker()
         self._timeout = httpx.Timeout(timeout, connect=connect_timeout)
@@ -151,15 +153,20 @@ class EmbeddingService:
                 guarded = self._breakers[url](_call_ollama)
                 embedding = await guarded()
                 if embedding:
+                    self._emit_metric({"event": "embedding_success", "url": url})
                     return embedding
                 logger.warning("no_embedding_in_response url=%s", url)
                 return None
             except pybreaker.CircuitBreakerError:
                 logger.warning("embedding_circuit_open url=%s", url)
+                self._emit_metric({"event": "embedding_circuit_open", "url": url})
                 continue
             except Exception as exc:
                 last_error = str(exc)
                 logger.warning("embedding_request_failed url=%s error=%s", url, exc)
+                self._emit_metric(
+                    {"event": "embedding_failure", "url": url, "error": str(exc)}
+                )
                 self._alert_endpoint_down(url, str(exc))
                 continue
 
@@ -205,6 +212,13 @@ class EmbeddingService:
             return
         self._endpoint_last_alert[url] = now
         self._endpoint_down_until[url] = now + self.quarantine_seconds
+        self._emit_metric(
+            {
+                "event": "embedding_endpoint_quarantined",
+                "url": url,
+                "seconds": self.quarantine_seconds,
+            }
+        )
         self._alert(f"Ollama embedding endpoint unavailable: {url}. Error: {error[:200]}")
 
     def _alert(self, message: str) -> None:
@@ -214,6 +228,14 @@ class EmbeddingService:
             self.alert_cb(message)
         except Exception:
             logger.exception("embedding_alert_callback_failed")
+
+    def _emit_metric(self, event: dict) -> None:
+        if not self.metrics_cb:
+            return
+        try:
+            self.metrics_cb(event)
+        except Exception:
+            logger.exception("embedding_metrics_callback_failed")
 
     @staticmethod
     def _normalize_base_url(url: str) -> str:
