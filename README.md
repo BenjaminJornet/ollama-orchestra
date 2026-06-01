@@ -105,6 +105,7 @@ status = await prewarm_all_servers(["http://localhost:11434"], model="your-model
 uv sync --dev
 uv run ruff check .
 uv run pytest
+uv run python scripts/smoke.py
 ```
 
 ## License

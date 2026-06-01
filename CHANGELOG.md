@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Added maintainer documentation, security policy, release process, examples, and issue/PR templates.
+- Added production-pattern and reasoning-model documentation.
+- Added build and manual publish workflows.
+
 ## 0.1.0
 
 Initial public release.
