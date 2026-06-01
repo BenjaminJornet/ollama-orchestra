@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.1.4
+
 ## 0.1.3
 
 - Added metrics callbacks for semaphore and embedding workflows.
