@@ -200,7 +200,8 @@ class EmbeddingService:
 
     def _alert_endpoint_down(self, url: str, error: str) -> None:
         now = time.monotonic()
-        if now - self._endpoint_last_alert.get(url, 0.0) < 1800:
+        last_alert = self._endpoint_last_alert.get(url)
+        if last_alert is not None and now - last_alert < 1800:
             return
         self._endpoint_last_alert[url] = now
         self._endpoint_down_until[url] = now + self.quarantine_seconds
