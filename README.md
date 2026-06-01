@@ -1,5 +1,9 @@
 # ollama-orchestra
 
+[![CI](https://github.com/BenjaminJornet/ollama-orchestra/actions/workflows/ci.yml/badge.svg)](https://github.com/BenjaminJornet/ollama-orchestra/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Python](https://img.shields.io/badge/python-3.11%2B-blue.svg)](pyproject.toml)
+
 Production helpers for running Ollama under concurrent load.
 
 Ollama is excellent for local models, but production pipelines quickly hit coordination problems: one GPU should usually receive one request at a time, multi-GPU ingestion needs endpoint rotation, embedding endpoints need fallback, and reasoning models may burn their token budget before producing visible content.
@@ -78,6 +82,22 @@ from ollama_orchestra import check_server_health, prewarm_all_servers
 healthy = await check_server_health("http://localhost:11434")
 status = await prewarm_all_servers(["http://localhost:11434"], model="your-model")
 ```
+
+## Documentation and examples
+
+- `docs/reasoning-models.md` explains Ollama's top-level `think: false` gotcha.
+- `docs/production-patterns.md` documents concurrency, round-robin, prewarm, and fallback patterns.
+- `examples/reasoning_chat.py` calls Ollama chat with reasoning disabled.
+- `examples/multi_endpoint_embeddings.py` demonstrates embedding fallback across endpoints.
+- `examples/semaphore_pool.py` demonstrates per-endpoint concurrency control.
+
+## Roadmap
+
+- Metrics callback hooks for queue and embedding workflows.
+- Adaptive concurrency based on latency and endpoint health.
+- Endpoint scoring for embedding workloads.
+- Streaming chat helper.
+- Additional gateway-compatible health checks.
 
 ## Development
 
