@@ -8,4 +8,3 @@ build/
 .coverage
 htmlcov/
 .DS_Store
-.github/workflows/ci.yml
