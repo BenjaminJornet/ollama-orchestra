@@ -41,10 +41,25 @@ Embedding endpoints can fail due to cold starts, memory pressure, or restarts. `
 - temporary quarantine for endpoints that just failed
 - optional alert callback
 
+## Orchestrated Chat with fallback and scoring
+
+To route chat and reasoning requests across multiple endpoints safely, use `OrchestratedChat`. It handles round-robin routing, serializes concurrent requests per GPU using `OllamaSemaphorePool`, checks circuit breakers, quarantines failing endpoints, and ranks URLs dynamically based on success rates and latencies (endpoint scoring):
+
+```python
+from ollama_orchestra import OrchestratedChat
+
+chat_service = OrchestratedChat(
+    model="your-reasoning-model",
+    urls=["http://gpu-a.local:11434", "http://gpu-b.local:11434"],
+    quarantine_seconds=300,
+)
+
+response = await chat_service.chat([{"role": "user", "content": "hi"}], think=False)
+```
+
 ## Maintenance roadmap
 
 - Metrics callback hooks.
 - Adaptive concurrency based on latency.
-- Endpoint scoring for embedding workloads.
 - Streaming chat helpers.
 - More health-check variants for gateways.

@@ -76,7 +76,28 @@ Features:
 - optional alert callback
 - long-text chunking and mean pooling
 
-## Health and prewarm
+## Orchestrated Chat
+
+To route chat and reasoning requests across multiple endpoints with concurrency controls and endpoint scoring, use `OrchestratedChat`:
+
+```python
+from ollama_orchestra import OrchestratedChat
+
+service = OrchestratedChat(
+    model="your-reasoning-model",
+    urls=["http://gpu-a.local:11434", "http://gpu-b.local:11434"],
+)
++
++response = await service.chat([{"role": "user", "content": "Explain this alert"}], think=False)
++```
++
++Features:
++- endpoint fallback and scoring
++- concurrency pool integration (OllamaSemaphorePool)
++- circuit breakers and quarantine
++- reasoning stripping (stripping `<think>` blocks by default)
++
+ ## Health and prewarm
 
 ```python
 from ollama_orchestra import check_server_health, prewarm_all_servers
