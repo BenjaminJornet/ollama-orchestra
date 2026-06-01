@@ -4,6 +4,7 @@ import asyncio
 import logging
 import time
 from collections.abc import Callable
+from dataclasses import dataclass
 
 import httpx
 import pybreaker
@@ -11,6 +12,26 @@ import pybreaker
 from .chunking import TextChunk, TextChunker
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class EndpointScore:
+    successes: int = 0
+    failures: int = 0
+    avg_latency: float = 0.0
+
+    @property
+    def value(self) -> float:
+        penalty = self.failures * 2.0
+        latency = self.avg_latency if self.avg_latency else 0.0
+        return self.successes - penalty - latency
+
+    def record_success(self, latency: float) -> None:
+        self.successes += 1
+        self.avg_latency = latency if not self.avg_latency else (self.avg_latency + latency) / 2
+
+    def record_failure(self) -> None:
+        self.failures += 1
 
 
 class EmbeddingService:
@@ -46,6 +67,7 @@ class EmbeddingService:
             url: pybreaker.CircuitBreaker(fail_max=3, reset_timeout=30, name=f"ollama_{idx}")
             for idx, url in enumerate(self.urls)
         }
+        self._endpoint_scores = {url: EndpointScore() for url in self.urls}
         self._endpoint_last_alert: dict[str, float] = {}
         self._endpoint_down_until: dict[str, float] = {}
 
@@ -135,10 +157,11 @@ class EmbeddingService:
     async def _embed_single_chunk(self, text: str) -> list[float] | None:
         client = await self._get_client()
         last_error = None
-        for url in self.urls:
+        for url in self._ranked_urls():
             if time.monotonic() < self._endpoint_down_until.get(url, 0.0):
                 continue
             try:
+                start = time.monotonic()
 
                 async def _call_ollama(endpoint: str = url) -> list[float] | None:
                     response = await client.post(
@@ -153,17 +176,20 @@ class EmbeddingService:
                 guarded = self._breakers[url](_call_ollama)
                 embedding = await guarded()
                 if embedding:
+                    self._record_endpoint_success(url, time.monotonic() - start)
                     self._emit_metric({"event": "embedding_success", "url": url})
                     return embedding
                 logger.warning("no_embedding_in_response url=%s", url)
                 return None
             except pybreaker.CircuitBreakerError:
                 logger.warning("embedding_circuit_open url=%s", url)
+                self._record_endpoint_failure(url)
                 self._emit_metric({"event": "embedding_circuit_open", "url": url})
                 continue
             except Exception as exc:
                 last_error = str(exc)
                 logger.warning("embedding_request_failed url=%s error=%s", url, exc)
+                self._record_endpoint_failure(url)
                 self._emit_metric(
                     {"event": "embedding_failure", "url": url, "error": str(exc)}
                 )
@@ -220,6 +246,37 @@ class EmbeddingService:
             }
         )
         self._alert(f"Ollama embedding endpoint unavailable: {url}. Error: {error[:200]}")
+
+    def _ranked_urls(self) -> list[str]:
+        return sorted(self.urls, key=lambda url: self._endpoint_scores[url].value, reverse=True)
+
+    def _record_endpoint_success(self, url: str, latency: float) -> None:
+        score = self._endpoint_scores[url]
+        score.record_success(latency)
+        self._emit_metric(
+            {
+                "event": "endpoint_score_updated",
+                "url": url,
+                "score": score.value,
+                "successes": score.successes,
+                "failures": score.failures,
+                "avg_latency": score.avg_latency,
+            }
+        )
+
+    def _record_endpoint_failure(self, url: str) -> None:
+        score = self._endpoint_scores[url]
+        score.record_failure()
+        self._emit_metric(
+            {
+                "event": "endpoint_score_updated",
+                "url": url,
+                "score": score.value,
+                "successes": score.successes,
+                "failures": score.failures,
+                "avg_latency": score.avg_latency,
+            }
+        )
 
     def _alert(self, message: str) -> None:
         if not self.alert_cb:

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Added endpoint scoring for embedding workloads based on success, failure, and latency.
+
 ## 0.1.4
 
 ## 0.1.3
