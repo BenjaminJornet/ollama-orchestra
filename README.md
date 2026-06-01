@@ -70,6 +70,7 @@ await service.close()
 Features:
 
 - endpoint fallback
+- endpoint scoring based on success, failure, and latency
 - per-endpoint circuit breakers
 - temporary quarantine for failing endpoints
 - optional alert callback
@@ -95,7 +96,6 @@ status = await prewarm_all_servers(["http://localhost:11434"], model="your-model
 ## Roadmap
 
 - Adaptive concurrency based on latency and endpoint health.
-- Endpoint scoring for embedding workloads.
 - Streaming chat helper.
 - Additional gateway-compatible health checks.
 

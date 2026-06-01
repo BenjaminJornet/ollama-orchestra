@@ -44,8 +44,10 @@ async def test_embedding_falls_back_to_second_endpoint_and_alerts():
         assert alerts
         assert service._endpoint_down_until["http://one.test"] > 0
         assert [event["event"] for event in metrics] == [
+            "endpoint_score_updated",
             "embedding_failure",
             "embedding_endpoint_quarantined",
+            "endpoint_score_updated",
             "embedding_success",
         ]
     finally:
@@ -117,5 +119,34 @@ async def test_embed_texts_preserves_order():
 
     try:
         assert await service.embed_texts(["a", "b"], batch_size=2) == [[1.0], [1.0]]
+    finally:
+        await service.close()
+
+
+@pytest.mark.asyncio
+@respx.mock
+async def test_endpoint_scoring_prioritizes_successful_endpoint():
+    calls: list[str] = []
+
+    def one_responder(_request):
+        calls.append("one")
+        return Response(500)
+
+    def two_responder(_request):
+        calls.append("two")
+        return Response(200, json={"embedding": [2.0]})
+
+    respx.post("http://one.test/api/embeddings").mock(side_effect=one_responder)
+    respx.post("http://two.test/api/embeddings").mock(side_effect=two_responder)
+    service = EmbeddingService(
+        "embed-model",
+        ["http://one.test", "http://two.test"],
+        quarantine_seconds=0,
+    )
+
+    try:
+        assert await service.embed_text("first") == [2.0]
+        assert await service.embed_text("second") == [2.0]
+        assert calls == ["one", "two", "two"]
     finally:
         await service.close()
