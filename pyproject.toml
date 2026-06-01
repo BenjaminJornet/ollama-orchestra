@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "ollama-orchestra"
-version = "0.1.5"
+version = "0.1.6"
 description = "Production helpers for running Ollama under concurrent load across local and remote endpoints."
 readme = "README.md"
 requires-python = ">=3.11"
