@@ -98,7 +98,14 @@ Features:
 - circuit breakers and quarantine
 - reasoning stripping (`<think>` blocks are stripped by default)
 
- ## Health and prewarm
+Use `endpoint_status()` to inspect the current routing scores and quarantine state:
+
+```python
+for endpoint in service.endpoint_status():
+    print(endpoint["url"], endpoint["score"], endpoint["quarantined"])
+```
+
+## Health and prewarm
 
 ```python
 from ollama_orchestra import check_server_health, prewarm_all_servers

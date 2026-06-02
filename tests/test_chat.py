@@ -61,3 +61,26 @@ async def test_orchestrated_chat_falls_back_and_scores():
     assert calls == ["one", "two", "two"]
     assert any(m["event"] == "chat_success" and m["url"] == "http://two.test" for m in metrics)
     assert any(m["event"] == "chat_failure" and m["url"] == "http://one.test" for m in metrics)
+
+
+@pytest.mark.asyncio
+@respx.mock
+async def test_endpoint_status_reports_scores_and_quarantine():
+    respx.post("http://one.test/api/chat").mock(return_value=Response(500))
+    respx.post("http://two.test/api/chat").mock(
+        return_value=Response(200, json={"message": {"role": "assistant", "content": "ok"}})
+    )
+    service = OrchestratedChat(
+        "test-model",
+        ["http://one.test", "http://two.test"],
+        quarantine_seconds=60,
+    )
+
+    await service.chat([{"role": "user", "content": "hi"}])
+    status = service.endpoint_status()
+
+    assert status[0]["url"] == "http://two.test"
+    one = next(item for item in status if item["url"] == "http://one.test")
+    assert one["failures"] == 1
+    assert one["quarantined"] is True
+    assert one["quarantine_remaining_seconds"] > 0
