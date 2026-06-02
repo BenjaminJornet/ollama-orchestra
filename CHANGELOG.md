@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.1.7
+
+- Fixed the OrchestratedChat README snippet and documented endpoint status inspection.
+- Updated GitHub Actions workflow versions where newer majors are resolvable.
+- Added `OrchestratedChat.endpoint_status()` for endpoint score and quarantine observability.
+
 ## 0.1.6
 
 ## 0.1.5
