@@ -87,16 +87,17 @@ service = OrchestratedChat(
     model="your-reasoning-model",
     urls=["http://gpu-a.local:11434", "http://gpu-b.local:11434"],
 )
-+
-+response = await service.chat([{"role": "user", "content": "Explain this alert"}], think=False)
-+```
-+
-+Features:
-+- endpoint fallback and scoring
-+- concurrency pool integration (OllamaSemaphorePool)
-+- circuit breakers and quarantine
-+- reasoning stripping (stripping `<think>` blocks by default)
-+
+
+response = await service.chat([{"role": "user", "content": "Explain this alert"}], think=False)
+```
+
+Features:
+
+- endpoint fallback and scoring
+- concurrency pool integration (`OllamaSemaphorePool`)
+- circuit breakers and quarantine
+- reasoning stripping (`<think>` blocks are stripped by default)
+
  ## Health and prewarm
 
 ```python
