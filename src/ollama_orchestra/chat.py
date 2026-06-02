@@ -108,6 +108,26 @@ class OrchestratedChat:
     def _ranked_urls(self) -> list[str]:
         return sorted(self.urls, key=lambda url: self._endpoint_scores[url].value, reverse=True)
 
+    def endpoint_status(self) -> list[dict[str, Any]]:
+        """Return read-only endpoint scores and quarantine state for observability."""
+        now = time.monotonic()
+        status = []
+        for url in self._ranked_urls():
+            score = self._endpoint_scores[url]
+            quarantined_until = self._endpoint_down_until.get(url, 0.0)
+            status.append(
+                {
+                    "url": url,
+                    "score": score.value,
+                    "successes": score.successes,
+                    "failures": score.failures,
+                    "avg_latency": score.avg_latency,
+                    "quarantined": now < quarantined_until,
+                    "quarantine_remaining_seconds": max(0.0, quarantined_until - now),
+                }
+            )
+        return status
+
     def _record_endpoint_success(self, url: str, latency: float) -> None:
         score = self._endpoint_scores[url]
         score.record_success(latency)
