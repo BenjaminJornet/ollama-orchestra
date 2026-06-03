@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import json
 import re
+from collections.abc import AsyncIterator
 from typing import Any
 
 import httpx
@@ -57,3 +59,39 @@ async def chat(
         if isinstance(message, dict) and isinstance(message.get("content"), str):
             message["content"] = strip_reasoning(message["content"])
     return data
+
+
+async def stream_chat(
+    base_url: str,
+    model: str,
+    messages: list[dict[str, Any]],
+    *,
+    think: bool = False,
+    strip: bool = True,
+    timeout: float = 120.0,
+    **opts: Any,
+) -> AsyncIterator[dict[str, Any]]:
+    """Stream Ollama `/api/chat` JSON lines with top-level `think: false` by default."""
+    url = base_url.rstrip("/").removesuffix("/v1")
+    body: dict[str, Any] = {"model": model, "messages": messages, "stream": True}
+    if think is False:
+        body["think"] = False
+    elif think is True:
+        body["think"] = True
+    if opts:
+        body["options"] = opts
+
+    async with (
+        httpx.AsyncClient(timeout=timeout) as client,
+        client.stream("POST", f"{url}/api/chat", json=body) as response,
+    ):
+        response.raise_for_status()
+        async for line in response.aiter_lines():
+            if not line:
+                continue
+            chunk = json.loads(line)
+            if strip:
+                message = chunk.get("message")
+                if isinstance(message, dict) and isinstance(message.get("content"), str):
+                    message["content"] = strip_reasoning(message["content"])
+            yield chunk
