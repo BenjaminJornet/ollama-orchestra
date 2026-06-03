@@ -53,6 +53,20 @@ result = await chat(
 
 The helper also strips leftover `<think>`, `<reasoning>`, `<thought>`, and simple Markdown fences from returned content by default.
 
+For streaming responses, use `stream_chat()`:
+
+```python
+from ollama_orchestra import stream_chat
+
+async for chunk in stream_chat(
+    "http://localhost:11434",
+    "your-model",
+    [{"role": "user", "content": "Summarize this log"}],
+    think=False,
+):
+    print(chunk)
+```
+
 ## Embeddings with fallback
 
 ```python
