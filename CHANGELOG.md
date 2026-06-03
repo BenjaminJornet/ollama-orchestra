@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.1.8
+
+- Added `stream_chat()` for Ollama `/api/chat` JSON-line streaming.
+- Kept top-level `think: false` behavior and reasoning stripping for streaming chunks.
+- Documented streaming chat usage in the README.
+
 ## 0.1.7
 
 - Fixed the OrchestratedChat README snippet and documented endpoint status inspection.
